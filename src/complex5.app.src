@@ -1,0 +1,17 @@
+%%% -*- mode: Erlang -*-
+%%%-------------------------------------------------------------------------
+%%% @author Tim Stewart <tim@stoo.org>
+%%%  [http://www.stoo.org]
+%%% @copyright 2010 Stoo Research
+%%% @end
+%%%-------------------------------------------------------------------------
+
+{application, complex5,
+ [{description, "complex5"},
+  {vsn, "1.2.3"},
+  {modules, []},
+  {registered, [complex5_sup]},
+  {applications, [kernel, stdlib]},
+  {mod, {complex5_app, []}},
+  {env, []}
+ ]}.

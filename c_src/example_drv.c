@@ -1,6 +1,7 @@
 /* port_driver.c */
 
 #include <stdio.h>
+#include "erl_interface.h"
 #include "erl_driver.h"
 #include "complex.h"
 
@@ -18,32 +19,49 @@ static void example_drv_stop(ErlDrvData handle) {
     driver_free((char*)handle);
 }
 
-static void example_drv_output(ErlDrvData handle, char *buff, int bufflen) {
+static void example_drv_output(ErlDrvData handle, char *buff, ErlDrvSizeT bufflen) {
     example_data* d = (example_data*)handle;
-    char fn = buff[0], arg = buff[1], res;
-    if (fn == 1) {
-        res = foo(arg);
-    } else if (fn == 2) {
-        res = bar(arg);
+    unsigned int res = 0;
+    ETERM *tuplep = NULL;
+    ETERM *fnp = NULL, *argp = NULL;
+    ETERM *intp = NULL;
+    unsigned int intp_len = 0;
+
+    erl_init(NULL, 0);
+    tuplep = erl_decode(buff);
+    fnp = erl_element(1, tuplep);
+    argp = erl_element(2, tuplep);
+
+    if (strncmp(ERL_ATOM_PTR(fnp), "foo", 3) == 0) {
+        res = foo(ERL_INT_VALUE(argp));
+    } else if (strncmp(ERL_ATOM_PTR(fnp), "bar", 3) == 0) {
+        res = bar(ERL_INT_VALUE(argp));
     }
-    driver_output(d->port, &res, 1);
+
+    intp = erl_mk_int(res);
+    intp_len = erl_encode(intp, buff);
+    
+    driver_output(d->port, buff, intp_len);
+    erl_free_term(tuplep);
+    erl_free_term(fnp);
+    erl_free_term(argp);
 }
 
 ErlDrvEntry example_drv_entry = {
-    NULL,			/* F_PTR init, N/A */
-    example_drv_start,		/* L_PTR start, called when port is opened */
-    example_drv_stop,		/* F_PTR stop, called when port is closed */
-    example_drv_output,		/* F_PTR output, called when erlang has sent */
-    NULL,			/* F_PTR ready_input, called when input descriptor ready */
-    NULL,			/* F_PTR ready_output, called when output descriptor ready */
-    "example_drv",		/* char *driver_name, the argument to open_port */
-    NULL,			/* F_PTR finish, called when unloaded */
-    NULL,			/* handle */
-    NULL,			/* F_PTR control, port_command callback */
-    NULL,			/* F_PTR timeout, reserved */
-    NULL,			/* F_PTR outputv, reserved */
-    NULL,			/* Readasync */
-    NULL,			/* Flush */
+    NULL,		/* F_PTR init, N/A */
+    example_drv_start,	/* L_PTR start, called when port is opened */
+    example_drv_stop,	/* F_PTR stop, called when port is closed */
+    example_drv_output,	/* F_PTR output, called when erlang has sent */
+    NULL,		/* F_PTR ready_input, called when input descriptor ready */
+    NULL,		/* F_PTR ready_output, called when output descriptor ready */
+    "example_drv",	/* char *driver_name, the argument to open_port */
+    NULL,		/* F_PTR finish, called when unloaded */
+    NULL,		/* handle */
+    NULL,		/* F_PTR control, port_command callback */
+    NULL,		/* F_PTR timeout, reserved */
+    NULL,		/* F_PTR outputv, reserved */
+    NULL,		/* Readasync */
+    NULL,		/* Flush */
     NULL,
     NULL,
     ERL_DRV_EXTENDED_MARKER,

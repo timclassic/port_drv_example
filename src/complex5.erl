@@ -3,7 +3,7 @@
 -export([foo/1, bar/1]).
 
 start(SharedLib) ->
-    PrivDir = code:lib_dir(cds_calc, priv),
+    PrivDir = code:lib_dir(port_drv_example, priv),
     case erl_ddll:load_driver(PrivDir, SharedLib) of
 	ok -> ok;
 	{error, already_loaded} -> ok;
@@ -13,7 +13,7 @@ start(SharedLib) ->
 
 init(SharedLib) ->
     register(complex, self()),
-    Port = open_port({spawn, SharedLib}, []),
+    Port = open_port({spawn, SharedLib}, [{packet, 2}, binary]),
     loop(Port).
 
 stop() ->
@@ -34,10 +34,10 @@ call_port(Msg) ->
 loop(Port) ->
     receive
 	{call, Caller, Msg} ->
-	    Port ! {self(), {command, encode(Msg)}},
+	    Port ! {self(), {command, term_to_binary(Msg)}},
 	    receive
 		{Port, {data, Data}} ->
-		    Caller ! {complex, decode(Data)}
+		    Caller ! {complex, binary_to_term(Data)}
 	    end,
 	    loop(Port);
 	stop ->
@@ -50,8 +50,3 @@ loop(Port) ->
 	    io:format("~p ~n", [Reason]),
 	    exit(port_terminated)
     end.
-
-encode({foo, X}) -> [1, X];
-encode({bar, Y}) -> [2, Y].
-
-decode([Int]) -> Int.

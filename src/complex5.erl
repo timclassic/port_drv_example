@@ -1,6 +1,6 @@
 -module(complex5).
 -export([start/1, stop/0, init/1]).
--export([foo/1, bar/1]).
+-export([foo/1, bar/1, doob/0]).
 
 start(SharedLib) ->
     PrivDir = code:lib_dir(port_drv_example, priv),
@@ -23,6 +23,8 @@ foo(X) ->
     call_port({foo, X}).
 bar(Y) ->
     call_port({bar, Y}).
+doob() ->
+    call_port({doob}).
 
 call_port(Msg) ->
     complex ! {call, self(), Msg},

@@ -9,7 +9,7 @@ typedef struct {
     ErlDrvPort port;
 } example_data;
 
-static ErlDrvData example_drv_start(ErlDrvPort port, char *buff) {
+static ErlDrvData example_drv_start(ErlDrvPort port, char *buf) {
     example_data* d = (example_data*)driver_alloc(sizeof(example_data));
     d->port = port;
     return (ErlDrvData)d;
@@ -19,29 +19,31 @@ static void example_drv_stop(ErlDrvData handle) {
     driver_free((char*)handle);
 }
 
-static void example_drv_output(ErlDrvData handle, char *buff, ErlDrvSizeT bufflen) {
+static void example_drv_output(ErlDrvData handle, char *buf, ErlDrvSizeT buflen) {
     example_data* d = (example_data*)handle;
-    unsigned int res = 0;
     ETERM *tuplep = NULL;
     ETERM *fnp = NULL, *argp = NULL;
-    ETERM *intp = NULL;
-    unsigned int intp_len = 0;
+    ETERM *resp = NULL;
+    double doob = 1.234;
+    unsigned int resp_len = 0;
 
     erl_init(NULL, 0);
-    tuplep = erl_decode(buff);
+    tuplep = erl_decode(buf);
     fnp = erl_element(1, tuplep);
-    argp = erl_element(2, tuplep);
 
     if (strncmp(ERL_ATOM_PTR(fnp), "foo", 3) == 0) {
-        res = foo(ERL_INT_VALUE(argp));
+        argp = erl_element(2, tuplep);
+        resp = erl_mk_int(foo(ERL_INT_VALUE(argp)));
     } else if (strncmp(ERL_ATOM_PTR(fnp), "bar", 3) == 0) {
-        res = bar(ERL_INT_VALUE(argp));
+        argp = erl_element(2, tuplep);
+        resp = erl_mk_int(bar(ERL_INT_VALUE(argp)));
+    } else if (strncmp(ERL_ATOM_PTR(fnp), "doob", 4) == 0) {
+        resp = erl_mk_float(doob);
     }
 
-    intp = erl_mk_int(res);
-    intp_len = erl_encode(intp, buff);
+    resp_len = erl_encode(resp, buf);
     
-    driver_output(d->port, buff, intp_len);
+    driver_output(d->port, buf, resp_len);
     erl_free_term(tuplep);
     erl_free_term(fnp);
     erl_free_term(argp);
